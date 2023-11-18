@@ -5,8 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.core.net.toUri
 import com.fylora.contacts.presentation.ui.theme.ContactsTheme
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 
 lateinit var PACKAGE_NAME: String
 
@@ -17,9 +19,20 @@ class MainActivity : ComponentActivity() {
 
     val pickMedia = registerForActivityResult(
         ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        uri?.let {
-            viewModel.updateImage(it)
+    ) {
+        it?.let { uri ->
+            val uriBytes = contentResolver.openInputStream(uri)?.use { inputStream ->
+                inputStream.readBytes()
+            }
+            val fileName = uri.toString().split("/").last()
+            val file = File(
+                filesDir,
+                "$fileName.jpg"
+            )
+            file.outputStream().use { outputStream ->
+                outputStream.write(uriBytes)
+            }
+            viewModel.updateImage(file.toUri())
         }
     }
 
